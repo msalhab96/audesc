@@ -1,7 +1,7 @@
-from exceptions import CorruptedFileError
-from base import AudioDescriber, Content
+from .exceptions import CorruptedFileError
+from .base import AudioDescriber, Content
 from dataclasses import dataclass
-from utils import (
+from .utils import (
     bytes_to_int,
     bytes_to_short,
     mask_bytes,

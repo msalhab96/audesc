@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from exceptions import FileNotFoundError
+from .exceptions import FileNotFoundError
 import os
 
 

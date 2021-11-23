@@ -1,6 +1,6 @@
 import os
 import struct
-from constants import (
+from .constants import (
                         INT_LITTLE_ENDIAN,
                         INT_BIG_ENDIAN,
                         SHORT_LITTLE_ENDIAN,
