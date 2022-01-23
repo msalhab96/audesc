@@ -32,6 +32,11 @@ class BaseDescriber(AudioDescriber):
 
 
 class WaveDescriber(BaseDescriber):
+    """A describer used to describe a wav file
+
+    Args:
+        file_path (str): the file path to get its information
+    """
     header = Range(0, 44)
     file_size = Range(4, 8)
     channels = Range(22, 24)

@@ -7,22 +7,56 @@ import os
 class AudioDescriber(ABC):
     @abstractmethod
     def get_duration(self):
+        """Get the duration for the given file
+
+        Returns:
+                returns the duration of the file as float number or None incase the file is corrupted
+        """
         pass
 
     @abstractmethod
     def get_sampling_rate(self):
+        """Get the sampling rate for the given file
+
+        Returns:
+                returns the sampling rate of the file as an integer or None incase the file is corrupted
+        """
         pass
 
     @abstractmethod
     def get_bit_rate(self):
+        """Get the bit rate for the given file
+
+        Returns:
+                returns the bit rate of the file as an integer or None incase the file is corrupted
+        """
         pass
 
     @abstractmethod
     def get_byte_rate(self):
+        """Get the byte rate for the given file which is the bit_rate / 8
+
+        Returns:
+                returns the bit rate of the file as an integer or None incase the file is corrupted
+        """
         pass
 
     @abstractmethod
     def get_channels_count(self):
+        """Get the number of channels for the given file 
+
+        Returns:
+                returns the number of channels of the file as an integer or None incase the file is corrupted
+        """
+        pass
+
+    @abstractmethod
+    def get_num_samples(self):
+        """Get the total number of samples for the given file 
+
+        Returns:
+                returns the total number of samples of the file as an integer or None incase the file is corrupted
+        """
         pass
 
 
@@ -51,3 +85,5 @@ class Content(Sequence):
 
     def __getitem__(self, idx: int) -> bytes:
         return self.data[idx]
+
+    
