@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import Union
+from pathlib import Path
 from .exceptions import FileNotFoundError
 import os
 
@@ -11,7 +12,8 @@ class IAudioDescriber(ABC):
         """Get the duration for the given file
 
         Returns:
-                returns the duration of the file as float number or None incase the file is corrupted
+                returns the duration of the file as float number or None
+                incase the file is corrupted
         """
         pass
 
@@ -20,7 +22,8 @@ class IAudioDescriber(ABC):
         """Get the sampling rate for the given file
 
         Returns:
-                returns the sampling rate of the file as an integer or None incase the file is corrupted
+                returns the sampling rate of the file as an integer or None
+                incase the file is corrupted
         """
         pass
 
@@ -29,7 +32,8 @@ class IAudioDescriber(ABC):
         """Get the bit rate for the given file
 
         Returns:
-                returns the bit rate of the file as an integer or None incase the file is corrupted
+                returns the bit rate of the file as an integer or None
+                incase the file is corrupted
         """
         pass
 
@@ -38,25 +42,28 @@ class IAudioDescriber(ABC):
         """Get the byte rate for the given file which is the bit_rate / 8
 
         Returns:
-                returns the bit rate of the file as an integer or None incase the file is corrupted
+                returns the bit rate of the file as an integer or None
+                incase the file is corrupted
         """
         pass
 
     @abstractmethod
     def get_channels_count():
-        """Get the number of channels for the given file 
+        """Get the number of channels for the given file
 
         Returns:
-                returns the number of channels of the file as an integer or None incase the file is corrupted
+                returns the number of channels of the file as an
+                integer or None incase the file is corrupted
         """
         pass
 
     @abstractmethod
     def get_num_samples():
-        """Get the total number of samples for the given file 
+        """Get the total number of samples for the given file
 
         Returns:
-                returns the total number of samples of the file as an integer or None incase the file is corrupted
+                returns the total number of samples of the file as an
+                integer or None incase the file is corrupted
         """
         pass
 
@@ -68,7 +75,13 @@ class IAudioDescriber(ABC):
 
 
 class Content(Sequence):
-    def __init__(self, file_path: str, start: int, end: int) -> None:
+    def __init__(
+            self,
+            file_path:
+            Union[str, Path],
+            start: int,
+            end: int
+            ) -> None:
         self.data = self._load(file_path, start, end)
 
     def _load(self, file_path: str, start: int, end: int) -> bytes:

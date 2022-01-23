@@ -1,6 +1,7 @@
 from .exceptions import CorruptedFileError
 from .base import IAudioDescriber, Content
 from dataclasses import dataclass
+from .format import Description
 from typing import Union
 from pathlib import Path
 from .utils import (
@@ -9,7 +10,6 @@ from .utils import (
     mask_bytes,
     bits_shift_right
     )
-from .format import Description
 
 
 @dataclass
@@ -20,7 +20,11 @@ class Range:
 
 class BaseDescriber(IAudioDescriber):
 
-    def __init__(self, file_path: Union[str, Path], header_range: Range) -> None:
+    def __init__(
+            self,
+            file_path: Union[str, Path],
+            header_range: Range
+            ) -> None:
         super().__init__()
         self.file_path = file_path
         print(header_range.start)
@@ -41,6 +45,7 @@ class BaseDescriber(IAudioDescriber):
             self.get_channels_count(),
             self.get_num_samples()
         )
+
 
 class WaveDescriber(BaseDescriber):
     """A describer used to describe a wav file
@@ -151,4 +156,3 @@ class FlacDescriber(BaseDescriber):
         result = mask_bytes(buffer, FlacDescriber.__sample_width_mask)
         result = bits_shift_right(result, 4)
         return result + 1
-

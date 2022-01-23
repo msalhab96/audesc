@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from typing import Union
 
+
 @dataclass
 class Description:
     duration: Union[float, None]
@@ -21,7 +22,6 @@ class Description:
             self.channels_count,
             self.num_samples
             )
-
 
     def __repr__(self):
         return '''Description({}, {}, {}, {}, {})'''.format(
