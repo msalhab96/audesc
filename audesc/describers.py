@@ -27,7 +27,6 @@ class BaseDescriber(IAudioDescriber):
             ) -> None:
         super().__init__()
         self.file_path = file_path
-        print(header_range.start)
         self._content = Content(
             file_path,
             start=header_range.start,
