@@ -1,12 +1,13 @@
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
+from typing import Union
 from .exceptions import FileNotFoundError
 import os
 
 
 class IAudioDescriber(ABC):
     @abstractmethod
-    def get_duration(self):
+    def get_duration():
         """Get the duration for the given file
 
         Returns:
@@ -15,7 +16,7 @@ class IAudioDescriber(ABC):
         pass
 
     @abstractmethod
-    def get_sampling_rate(self):
+    def get_sampling_rate():
         """Get the sampling rate for the given file
 
         Returns:
@@ -24,7 +25,7 @@ class IAudioDescriber(ABC):
         pass
 
     @abstractmethod
-    def get_bit_rate(self):
+    def get_bit_rate():
         """Get the bit rate for the given file
 
         Returns:
@@ -33,7 +34,7 @@ class IAudioDescriber(ABC):
         pass
 
     @abstractmethod
-    def get_byte_rate(self):
+    def get_byte_rate():
         """Get the byte rate for the given file which is the bit_rate / 8
 
         Returns:
@@ -42,7 +43,7 @@ class IAudioDescriber(ABC):
         pass
 
     @abstractmethod
-    def get_channels_count(self):
+    def get_channels_count():
         """Get the number of channels for the given file 
 
         Returns:
@@ -51,11 +52,17 @@ class IAudioDescriber(ABC):
         pass
 
     @abstractmethod
-    def get_num_samples(self):
+    def get_num_samples():
         """Get the total number of samples for the given file 
 
         Returns:
                 returns the total number of samples of the file as an integer or None incase the file is corrupted
+        """
+        pass
+
+    @abstractmethod
+    def describe():
+        """Get a describtion about the given file
         """
         pass
 
@@ -64,7 +71,7 @@ class Content(Sequence):
     def __init__(self, file_path: str, start: int, end: int) -> None:
         self.data = self._load(file_path, start, end)
 
-    def _load(self, file_path: str, start: int, end: int) -> None:
+    def _load(self, file_path: str, start: int, end: int) -> bytes:
         """This function is used to load the bytes data from the
         given target file
 
@@ -85,5 +92,3 @@ class Content(Sequence):
 
     def __getitem__(self, idx: int) -> bytes:
         return self.data[idx]
-
-    

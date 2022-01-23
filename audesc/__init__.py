@@ -1,4 +1,4 @@
-from describers import (
+from .describers import (
     WaveDescriber,
     FlacDescriber
     )
