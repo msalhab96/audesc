@@ -4,7 +4,7 @@ from .exceptions import FileNotFoundError
 import os
 
 
-class AudioDescriber(ABC):
+class IAudioDescriber(ABC):
     @abstractmethod
     def get_duration(self):
         """Get the duration for the given file

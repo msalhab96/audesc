@@ -1,5 +1,5 @@
 from .exceptions import CorruptedFileError
-from .base import AudioDescriber, Content
+from .base import IAudioDescriber, Content
 from dataclasses import dataclass
 from .utils import (
     bytes_to_int,
@@ -15,7 +15,7 @@ class Range:
     end: int
 
 
-class BaseDescriber(AudioDescriber):
+class BaseDescriber(IAudioDescriber):
     header = Range(None, None)
 
     def __init__(self, file_path: str) -> None:
