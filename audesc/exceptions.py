@@ -1,4 +1,4 @@
-from utils import get_file_extension
+from .utils import get_file_extension
 
 
 class FileNotFoundError(Exception):
