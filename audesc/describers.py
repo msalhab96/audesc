@@ -1,8 +1,10 @@
+from ast import And
+from unittest import result
 from .exceptions import CorruptedFileError
 from .base import IAudioDescriber, Content
 from dataclasses import dataclass
 from .format import Description
-from typing import Union
+from typing import Any, Union
 from pathlib import Path
 from .utils import (
     bytes_to_int,
@@ -16,6 +18,17 @@ from .utils import (
 class Range:
     start: int
     end: int
+
+
+def update_first_header_idx(func) -> callable:
+    def wrapper(obj, *args, **kwargs):
+        if obj._first_header_idx is None:
+            result = obj._find_next_header_idx(start_idx=0)
+            if result is None:
+                raise CorruptedFileError(obj.file_path)
+            obj._first_header_idx = result
+        return func(obj, *args, **kwargs)
+    return wrapper
 
 
 class BaseDescriber(IAudioDescriber):
@@ -157,47 +170,125 @@ class FlacDescriber(BaseDescriber):
         return result + 1
 
 class MP3Describer(BaseDescriber):
-    """Used to describe an MP3 file, we assume that the sample rate for the 
+    """Used to describe an MP3 file, we assume that the sample rate for the
     first frame is the same for all frames
 
     Args:
-        BaseDescriber (Union[str, Path]): the path of the mp3 file to be 
+        BaseDescriber (Union[str, Path]): the path of the mp3 file to be
         described
     """
     __header_length = 4
     __frame_sync_head = 0xff
     __frame_sync_tail = 0xe0
+    __sampling_rate_shifts = 10
+    __sampling_rate_mask = 3
+    __mpeg_version_shifts = 19
+    __mpeg_version_mask = 3
+    __layer_shifts = 17
+    __layer_mask = 3
+    __bit_rate_shifts = 12
+    __bit_rate_mask = 15
+    __num_channels_shifts = 6
+    __num_channels_mask = 3
+    __mpeg_mapper = {
+        0: 2.5, # MPEG-2.5
+        2: 2,   # MPEG-2
+        3: 1    # MPEG-1
+    }
+    __sample_rate_mapper = [
+        [11025, 12000, 8000, None],     # MPEG-2.5
+        [None] * 4,                     # Reserved
+        [22050, 24000, 16000, None],    # MPEG-2
+        [44100, 48000, 32000, None],    # MPEG-1
+        ]
+    __bit_rate_mapper = [[
+            [0,32,48,56, 64, 80, 96,112,128,144,160,176,192,224,256,None],
+            [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160,None],
+            [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160,None]],
+            [[0,32,64,96,128,160,192,224,256,288,320,352,384,416,448,None],
+            [0,32,48,56, 64, 80, 96,112,128,160,192,224,256,320,384,None],
+            [0,32,40,48, 56, 64, 80, 96,112,128,160,192,224,256,320,None]
+            ]]
 
     def __init__(self, file_path: Union[str, Path]) -> None:
         super().__init__(file_path, Range(0, -1))
         self.last_header_idx = 0
+        self._first_header_idx = None
 
+    def __get_first_buffer(self) -> bytes:
+        return self._get_buffer(Range(self._first_header_idx,
+                                self._first_header_idx + self.__header_length))
+
+    def __process_first_header(self, mask: Union[hex, int], num_shifts: int) -> int:
+        buffer = self.__get_first_buffer()
+        result = bits_shift_right(buffer, num_shifts)
+        return result & mask
+
+    @update_first_header_idx
     def get_sampling_rate(self) -> int:
-        pass
+        sr_idx = self.__process_first_header(
+            self.__sampling_rate_mask,
+            self.__sampling_rate_shifts
+            )
+        mpeg_version = self.get_mpeg_version(with_map=False)
+        return self.__sample_rate_mapper[mpeg_version][sr_idx]
 
+    @update_first_header_idx
+    def get_mpeg_version(self, with_map=True) -> Union[float, int, None]:
+        result = self.__process_first_header(
+            self.__mpeg_version_mask,
+            self.__mpeg_version_shifts
+            )
+        return self.__mpeg_mapper.get(result, None) if with_map else result
+
+    @update_first_header_idx
+    def get_layer(self) -> Union[float, int]:
+        result = self.__process_first_header(
+            self.__layer_mask,
+            self.__layer_shifts
+            )
+        return 4 - result if result > 0 else None
+
+    @update_first_header_idx
     def get_num_samples(self) -> int:
-        pass
+        return None
 
+    @update_first_header_idx
     def get_duration(self) -> float:
-        pass
+        return None
 
+    @update_first_header_idx
     def get_bit_rate(self):
-        pass
+        br_idx = self.__process_first_header(
+            self.__bit_rate_mask,
+            self.__bit_rate_shifts,
+            )
+        mpeg_version = self.get_mpeg_version(with_map=False)
+        layer = self.get_layer()
+        if layer is None:
+            return
+        return self.__bit_rate_mapper[mpeg_version & 1][layer - 1][br_idx]
 
+    @update_first_header_idx
     def get_byte_rate(self):
-        pass 
+        return self.get_bit_rate() // 8
 
+    @update_first_header_idx
     def get_channels_count(self):
-        pass
+        return self.__process_first_header(
+            self.__num_channels_mask,
+            self.__num_channels_shifts
+            )
 
+    @update_first_header_idx
     def get_sample_width(self):
-        pass
+        return None
 
-    def __find_next_header_idx(self, start_idx=0) -> Union[int, None]:
+    def _find_next_header_idx(self, start_idx=0) -> Union[int, None]:
         """Used to find the next header based on the given idx by searching for
         the synchronization bits
         Args:
-            start_idx (int, optional): the starting indexof the header. 
+            start_idx (int, optional): the starting indexof the header.
             Defaults to 0.
         """
         offset = self._content.find(self.__frame_sync_head, start_idx)
@@ -205,14 +296,6 @@ class MP3Describer(BaseDescriber):
             return
         masked_tail = self._content[offset + 1] & self.__frame_sync_tail
         if masked_tail == self.__frame_sync_tail:
-            self.last_header_idx = offset
             return offset
-        return self.__find_next_header_idx(start_idx=offset)
+        return self._find_next_header_idx(start_idx=offset)
 
-    def __is_valid_header(self, offset: int):
-        """used to validate weither the header is a valid header or not
-
-        Args:
-            offset (int): the starting indexof the header
-        """
-        pass
