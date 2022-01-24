@@ -155,3 +155,64 @@ class FlacDescriber(BaseDescriber):
         result = mask_bytes(buffer, FlacDescriber.__sample_width_mask)
         result = bits_shift_right(result, 4)
         return result + 1
+
+class MP3Describer(BaseDescriber):
+    """Used to describe an MP3 file, we assume that the sample rate for the 
+    first frame is the same for all frames
+
+    Args:
+        BaseDescriber (Union[str, Path]): the path of the mp3 file to be 
+        described
+    """
+    __header_length = 4
+    __frame_sync_head = 0xff
+    __frame_sync_tail = 0xe0
+
+    def __init__(self, file_path: Union[str, Path]) -> None:
+        super().__init__(file_path, Range(0, -1))
+        self.last_header_idx = 0
+
+    def get_sampling_rate(self) -> int:
+        pass
+
+    def get_num_samples(self) -> int:
+        pass
+
+    def get_duration(self) -> float:
+        pass
+
+    def get_bit_rate(self):
+        pass
+
+    def get_byte_rate(self):
+        pass 
+
+    def get_channels_count(self):
+        pass
+
+    def get_sample_width(self):
+        pass
+
+    def __find_next_header_idx(self, start_idx=0) -> Union[int, None]:
+        """Used to find the next header based on the given idx by searching for
+        the synchronization bits
+        Args:
+            start_idx (int, optional): the starting indexof the header. 
+            Defaults to 0.
+        """
+        offset = self._content.find(self.__frame_sync_head, start_idx)
+        if offset is None:
+            return
+        masked_tail = self._content[offset + 1] & self.__frame_sync_tail
+        if masked_tail == self.__frame_sync_tail:
+            self.last_header_idx = offset
+            return offset
+        return self.__find_next_header_idx(start_idx=offset)
+
+    def __is_valid_header(self, offset: int):
+        """used to validate weither the header is a valid header or not
+
+        Args:
+            offset (int): the starting indexof the header
+        """
+        pass
