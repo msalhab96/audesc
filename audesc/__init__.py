@@ -1,4 +1,5 @@
 from .describers import (
     WaveDescriber,
-    FlacDescriber
+    FlacDescriber,
+    MP3Describer
     )
