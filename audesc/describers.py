@@ -1,10 +1,8 @@
-from ast import And
-from unittest import result
 from .exceptions import CorruptedFileError
 from .base import IAudioDescriber, Content
 from dataclasses import dataclass
 from .format import Description
-from typing import Any, Union
+from typing import Union
 from pathlib import Path
 from .utils import (
     bytes_to_int,
@@ -219,35 +217,57 @@ class MP3Describer(BaseDescriber):
         return self._get_buffer(Range(self._first_header_idx,
                                 self._first_header_idx + self.__header_length))
 
+    def __get_pos_buffer(self, b_range: Union[Range, None]=None):
+        if b_range is None:
+            return self.__get_first_buffer()
+        return self._get_buffer(b_range)
+
+    def __shift_and_mask(self, buffer: bytes, mask: Union[hex, int], n_shifts: int):
+        return bits_shift_right(buffer, n_shifts) & mask
+
     def __process_first_header(self, mask: Union[hex, int], num_shifts: int) -> int:
         buffer = self.__get_first_buffer()
-        result = bits_shift_right(buffer, num_shifts)
-        return result & mask
+        return self.__shift_and_mask(buffer, mask, num_shifts)
 
-    @update_first_header_idx
-    def get_sampling_rate(self) -> int:
-        sr_idx = self.__process_first_header(
+    def __get_sr_for_buffer(self, buffer):
+        sr_idx = self.__shift_and_mask(
+            buffer,
             self.__sampling_rate_mask,
             self.__sampling_rate_shifts
             )
-        mpeg_version = self.get_mpeg_version(with_map=False)
+        mpeg_version = self.__get_mpeg_for_buffer(buffer, with_map=False)
         return self.__sample_rate_mapper[mpeg_version][sr_idx]
 
     @update_first_header_idx
-    def get_mpeg_version(self, with_map=True) -> Union[float, int, None]:
-        result = self.__process_first_header(
+    def get_sampling_rate(self, b_range: Union[Range, None]=None) -> int:
+        buffer = self.__get_pos_buffer(b_range)
+        return self.__get_sr_for_buffer(buffer)
+
+    def __get_mpeg_for_buffer(self, buffer, with_map=False):
+        result = self.__shift_and_mask(
+            buffer,
             self.__mpeg_version_mask,
             self.__mpeg_version_shifts
             )
         return self.__mpeg_mapper.get(result, None) if with_map else result
 
     @update_first_header_idx
-    def get_layer(self) -> Union[float, int]:
-        result = self.__process_first_header(
+    def get_mpeg_version(self, b_range: Union[Range, None]=None, with_map=True) -> Union[float, int, None]:
+        buffer = self.__get_pos_buffer(b_range)
+        return self.__get_mpeg_for_buffer(buffer, with_map)
+
+    def __get_layer_for_buffer(self, buffer) -> Union[float, int, None]:
+        result = self.__shift_and_mask(
+            buffer,
             self.__layer_mask,
             self.__layer_shifts
             )
         return 4 - result if result > 0 else None
+
+    @update_first_header_idx
+    def get_layer(self, b_range: Union[Range, None]=None) -> Union[float, int]:
+        buffer = self.__get_pos_buffer(b_range)
+        return self.__get_layer_for_buffer(buffer)
 
     @update_first_header_idx
     def get_num_samples(self) -> int:
@@ -257,17 +277,22 @@ class MP3Describer(BaseDescriber):
     def get_duration(self) -> float:
         return None
 
-    @update_first_header_idx
-    def get_bit_rate(self):
-        br_idx = self.__process_first_header(
+    def __get_br_for_buffer(self, buffer):
+        br_idx = self.__shift_and_mask(
+            buffer,
             self.__bit_rate_mask,
             self.__bit_rate_shifts,
             )
-        mpeg_version = self.get_mpeg_version(with_map=False)
-        layer = self.get_layer()
+        mpeg_version = self.__get_mpeg_for_buffer(buffer, with_map=False)
+        layer = self.__get_layer_for_buffer(buffer)
         if layer is None:
             return
         return self.__bit_rate_mapper[mpeg_version & 1][layer - 1][br_idx]
+
+    @update_first_header_idx
+    def get_bit_rate(self, b_range: Union[Range, None]=None):
+        buffer = self.__get_pos_buffer(b_range)
+        return self.__get_br_for_buffer(buffer)
 
     @update_first_header_idx
     def get_byte_rate(self):
