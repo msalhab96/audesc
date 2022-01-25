@@ -114,7 +114,11 @@ class WaveDescriber(BaseDescriber):
         ) / (self.get_channels_count() * self.get_sample_width()))
 
     def get_duration(self) -> float:
-        return self.get_num_samples() / self.get_sampling_rate()
+        result = (self.get_file_size() - self.__header.end)
+        result /= self.get_sampling_rate()
+        result /= self.get_channels_count()
+        result /= (self.get_sample_width() / 8)
+        return result
 
 
 class FlacDescriber(BaseDescriber):
