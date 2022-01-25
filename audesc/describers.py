@@ -150,18 +150,18 @@ class FlacDescriber(BaseDescriber):
             return
         return num_samples / sampling_rate
 
-    def get_bit_rate(self):
+    def get_bit_rate(self) -> None:
         return None
 
-    def get_byte_rate(self):
+    def get_byte_rate(self) -> None:
         return None
 
-    def get_channels_count(self):
+    def get_channels_count(self) -> int:
         buffer = self._get_buffer(FlacDescriber.__channels)
         result = mask_bytes(buffer, FlacDescriber.__channels_mask)
         return result + 1
 
-    def get_sample_width(self):
+    def get_sample_width(self) -> int:
         buffer = self._get_buffer(FlacDescriber.__sample_width)
         result = mask_bytes(buffer, FlacDescriber.__sample_width_mask)
         result = bits_shift_right(result, 4)
@@ -217,19 +217,19 @@ class MP3Describer(BaseDescriber):
         return self._get_buffer(Range(self._first_header_idx,
                                 self._first_header_idx + self.__header_length))
 
-    def __get_pos_buffer(self, b_range: Union[Range, None]=None):
+    def __get_pos_buffer(self, b_range: Union[Range, None]=None) -> bytes:
         if b_range is None:
             return self.__get_first_buffer()
         return self._get_buffer(b_range)
 
-    def __shift_and_mask(self, buffer: bytes, mask: Union[hex, int], n_shifts: int):
+    def __shift_and_mask(self, buffer: bytes, mask: Union[hex, int], n_shifts: int) -> int:
         return bits_shift_right(buffer, n_shifts) & mask
 
     def __process_first_header(self, mask: Union[hex, int], num_shifts: int) -> int:
         buffer = self.__get_first_buffer()
         return self.__shift_and_mask(buffer, mask, num_shifts)
 
-    def __get_sr_for_buffer(self, buffer):
+    def __get_sr_for_buffer(self, buffer) -> Union[int, None]:
         sr_idx = self.__shift_and_mask(
             buffer,
             self.__sampling_rate_mask,
@@ -239,11 +239,11 @@ class MP3Describer(BaseDescriber):
         return self.__sample_rate_mapper[mpeg_version][sr_idx]
 
     @update_first_header_idx
-    def get_sampling_rate(self, b_range: Union[Range, None]=None) -> int:
+    def get_sampling_rate(self, b_range: Union[Range, None]=None) -> Union[int, None]:
         buffer = self.__get_pos_buffer(b_range)
         return self.__get_sr_for_buffer(buffer)
 
-    def __get_mpeg_for_buffer(self, buffer, with_map=False):
+    def __get_mpeg_for_buffer(self, buffer, with_map=False) -> Union[int, None]:
         result = self.__shift_and_mask(
             buffer,
             self.__mpeg_version_mask,
@@ -256,7 +256,7 @@ class MP3Describer(BaseDescriber):
         buffer = self.__get_pos_buffer(b_range)
         return self.__get_mpeg_for_buffer(buffer, with_map)
 
-    def __get_layer_for_buffer(self, buffer) -> Union[float, int, None]:
+    def __get_layer_for_buffer(self, buffer: bytes) -> Union[float, int, None]:
         result = self.__shift_and_mask(
             buffer,
             self.__layer_mask,
@@ -270,14 +270,14 @@ class MP3Describer(BaseDescriber):
         return self.__get_layer_for_buffer(buffer)
 
     @update_first_header_idx
-    def get_num_samples(self) -> int:
+    def get_num_samples(self) -> None:
         return None
 
     @update_first_header_idx
-    def get_duration(self) -> float:
+    def get_duration(self) -> None:
         return None
 
-    def __get_br_for_buffer(self, buffer):
+    def __get_br_for_buffer(self, buffer: bytes) -> Union[int, None]:
         br_idx = self.__shift_and_mask(
             buffer,
             self.__bit_rate_mask,
@@ -290,13 +290,14 @@ class MP3Describer(BaseDescriber):
         return self.__bit_rate_mapper[mpeg_version & 1][layer - 1][br_idx]
 
     @update_first_header_idx
-    def get_bit_rate(self, b_range: Union[Range, None]=None):
+    def get_bit_rate(self, b_range: Union[Range, None]=None) -> Union[int, None]:
         buffer = self.__get_pos_buffer(b_range)
         return self.__get_br_for_buffer(buffer)
 
     @update_first_header_idx
-    def get_byte_rate(self):
-        return self.get_bit_rate() // 8
+    def get_byte_rate(self) -> Union[int, None]:
+        result = self.get_bit_rate()
+        return None if result is None else result // 8
 
     @update_first_header_idx
     def get_channels_count(self):
