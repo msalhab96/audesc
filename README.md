@@ -36,6 +36,7 @@ Supported Formats
 ==============
 * WAV
 * FLAC
+* MP3 (Duration not supported yet)
 
 How to Use It 
 ==============
@@ -55,9 +56,9 @@ print(description.num_samples)
 
 To describe FLAC file
 ```python
-from audesc import WaveDescriber
+from audesc import FlacDescriber
 file_path = 'my/path/to/file.flac'
-aud_describer = WaveDescriber(file_path)
+aud_describer = FlacDescriber(file_path)
 description = aud_describer.describe()
 print(description)
 print(description.sampling_rate)
@@ -65,4 +66,20 @@ print(description.channels_count)
 print(description.duration)
 print(description.bit_rate)
 print(description.num_samples)
+```
+
+To describe MP3 file
+```python
+from audesc import MP3Describer
+file_path = 'my/path/to/file.mp3'
+aud_describer = MP3Describer(file_path)
+description = aud_describer.describe()
+print(description)
+print(description.sampling_rate)
+print(description.channels_count)
+print(description.duration)   # not supported yet
+print(description.bit_rate)
+print(description.num_samples)
+print(aud_describer.get_mpeg_version())
+print(aud_describer.get_layer())
 ```
