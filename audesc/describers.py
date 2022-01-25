@@ -301,10 +301,11 @@ class MP3Describer(BaseDescriber):
 
     @update_first_header_idx
     def get_channels_count(self):
-        return self.__process_first_header(
+        result = self.__process_first_header(
             self.__num_channels_mask,
             self.__num_channels_shifts
             )
+        return 1 if result == 3 else 2
 
     @update_first_header_idx
     def get_sample_width(self):
