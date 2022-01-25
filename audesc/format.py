@@ -15,7 +15,7 @@ class Description:
         return int(self.sampling_rate * self.duration)
 
     def __str__(self):
-        return """sr: {} sample/sec, duration: {} sec, br: {} b/sec, ch: {} channels, n_s: {} samples""".format(
+        return """sr: {} sample/sec, duration: {} sec, br: {} kb/sec, ch: {} channels, n_s: {} samples""".format(
             self.sampling_rate,
             self.duration,
             self.bit_rate,
