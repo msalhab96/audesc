@@ -167,6 +167,7 @@ class FlacDescriber(BaseDescriber):
         result = bits_shift_right(result, 4)
         return result + 1
 
+
 class MP3Describer(BaseDescriber):
     """Used to describe an MP3 file, we assume that the sample rate for the
     first frame is the same for all frames
@@ -189,9 +190,9 @@ class MP3Describer(BaseDescriber):
     __num_channels_shifts = 6
     __num_channels_mask = 3
     __mpeg_mapper = {
-        0: 2.5, # MPEG-2.5
-        2: 2,   # MPEG-2
-        3: 1    # MPEG-1
+        0: 2.5,  # MPEG-2.5
+        2: 2,    # MPEG-2
+        3: 1     # MPEG-1
     }
     __sample_rate_mapper = [
         [11025, 12000, 8000, None],     # MPEG-2.5
@@ -200,13 +201,12 @@ class MP3Describer(BaseDescriber):
         [44100, 48000, 32000, None],    # MPEG-1
         ]
     __bit_rate_mapper = [[
-            [0,32,48,56, 64, 80, 96,112,128,144,160,176,192,224,256,None],
-            [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160,None],
-            [0, 8,16,24, 32, 40, 48, 56, 64, 80, 96,112,128,144,160,None]],
-            [[0,32,64,96,128,160,192,224,256,288,320,352,384,416,448,None],
-            [0,32,48,56, 64, 80, 96,112,128,160,192,224,256,320,384,None],
-            [0,32,40,48, 56, 64, 80, 96,112,128,160,192,224,256,320,None]
-            ]]
+        [0, 32, 48, 56,  64,  80,  96, 112, 128, 144, 160, 176, 192, 224, 256, None],
+        [0, 8, 16, 24,  32,  40,  48,  56,  64,  80,  96, 112, 128, 144, 160, None],
+        [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, None]],
+        [[0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, None],
+        [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384, None],
+        [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, None]]]
 
     def __init__(self, file_path: Union[str, Path]) -> None:
         super().__init__(file_path, Range(0, -1))
@@ -217,19 +217,28 @@ class MP3Describer(BaseDescriber):
         return self._get_buffer(Range(self._first_header_idx,
                                 self._first_header_idx + self.__header_length))
 
-    def __get_pos_buffer(self, b_range: Union[Range, None]=None) -> bytes:
+    def __get_pos_buffer(self, b_range: Union[Range, None] = None) -> bytes:
         if b_range is None:
             return self.__get_first_buffer()
         return self._get_buffer(b_range)
 
-    def __shift_and_mask(self, buffer: bytes, mask: Union[hex, int], n_shifts: int) -> int:
+    def __shift_and_mask(
+            self,
+            buffer: bytes,
+            mask: Union[hex, int],
+            n_shifts: int
+            ) -> int:
         return bits_shift_right(buffer, n_shifts) & mask
 
-    def __process_first_header(self, mask: Union[hex, int], num_shifts: int) -> int:
+    def __process_first_header(
+            self,
+            mask: Union[hex, int],
+            num_shifts: int
+            ) -> int:
         buffer = self.__get_first_buffer()
         return self.__shift_and_mask(buffer, mask, num_shifts)
 
-    def __get_sr_for_buffer(self, buffer) -> Union[int, None]:
+    def __get_sr_for_buffer(self, buffer: bytes) -> Union[int, None]:
         sr_idx = self.__shift_and_mask(
             buffer,
             self.__sampling_rate_mask,
@@ -239,11 +248,18 @@ class MP3Describer(BaseDescriber):
         return self.__sample_rate_mapper[mpeg_version][sr_idx]
 
     @update_first_header_idx
-    def get_sampling_rate(self, b_range: Union[Range, None]=None) -> Union[int, None]:
+    def get_sampling_rate(
+            self,
+            b_range: Union[Range, None] = None
+            ) -> Union[int, None]:
         buffer = self.__get_pos_buffer(b_range)
         return self.__get_sr_for_buffer(buffer)
 
-    def __get_mpeg_for_buffer(self, buffer, with_map=False) -> Union[int, None]:
+    def __get_mpeg_for_buffer(
+            self,
+            buffer,
+            with_map=False
+            ) -> Union[int, None]:
         result = self.__shift_and_mask(
             buffer,
             self.__mpeg_version_mask,
@@ -252,7 +268,11 @@ class MP3Describer(BaseDescriber):
         return self.__mpeg_mapper.get(result, None) if with_map else result
 
     @update_first_header_idx
-    def get_mpeg_version(self, b_range: Union[Range, None]=None, with_map=True) -> Union[float, int, None]:
+    def get_mpeg_version(
+            self,
+            b_range: Union[Range, None] = None,
+            with_map=True
+            ) -> Union[float, int, None]:
         buffer = self.__get_pos_buffer(b_range)
         return self.__get_mpeg_for_buffer(buffer, with_map)
 
@@ -265,7 +285,10 @@ class MP3Describer(BaseDescriber):
         return 4 - result if result > 0 else None
 
     @update_first_header_idx
-    def get_layer(self, b_range: Union[Range, None]=None) -> Union[float, int]:
+    def get_layer(
+            self,
+            b_range: Union[Range, None] = None
+            ) -> Union[float, int]:
         buffer = self.__get_pos_buffer(b_range)
         return self.__get_layer_for_buffer(buffer)
 
@@ -290,7 +313,10 @@ class MP3Describer(BaseDescriber):
         return self.__bit_rate_mapper[mpeg_version & 1][layer - 1][br_idx]
 
     @update_first_header_idx
-    def get_bit_rate(self, b_range: Union[Range, None]=None) -> Union[int, None]:
+    def get_bit_rate(
+            self,
+            b_range: Union[Range, None] = None
+            ) -> Union[int, None]:
         buffer = self.__get_pos_buffer(b_range)
         return self.__get_br_for_buffer(buffer)
 
@@ -325,4 +351,3 @@ class MP3Describer(BaseDescriber):
         if masked_tail == self.__frame_sync_tail:
             return offset
         return self._find_next_header_idx(start_idx=offset)
-

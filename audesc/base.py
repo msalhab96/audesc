@@ -106,12 +106,16 @@ class Content(Sequence):
     def __getitem__(self, idx: int) -> bytes:
         return self.data[idx]
 
-    def find(self, match: Union[hex, str, bytes], start_idx=0) -> Union[None, int]:
-        """sed to find a match in the file's content if found it returns the 
+    def find(
+            self,
+            match: Union[hex, str, bytes],
+            start_idx=0
+            ) -> Union[None, int]:
+        """sed to find a match in the file's content if found it returns the
         starting idx if not returns None
 
         Args:
-            match (Union[hex, str, bytes]): the exact subvalue to be found in 
+            match (Union[hex, str, bytes]): the exact subvalue to be found in
             the file's bytes contents
             start_idx (int, optional): the starting index to start looking from.
             Defaults to 0.
