@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from .format import Description
 from typing import Union
 from pathlib import Path
+from functools import wraps
 from .utils import (
     bytes_to_int,
     bytes_to_short,
@@ -16,6 +17,18 @@ from .utils import (
 class Range:
     start: int
     end: int
+
+
+def update_first_header_idx(func) -> callable:
+    @wraps(func)
+    def wrapper(obj, *args, **kwargs):
+        if obj._first_header_idx is None:
+            result = obj._find_next_header_idx(start_idx=0)
+            if result is None:
+                raise CorruptedFileError(obj.file_path)
+            obj._first_header_idx = result
+        return func(obj, *args, **kwargs)
+    return wrapper
 
 
 class BaseDescriber(IAudioDescriber):
@@ -48,7 +61,6 @@ class BaseDescriber(IAudioDescriber):
 
 class WaveDescriber(BaseDescriber):
     """A describer used to describe a wav file
-
     Args:
         file_path (Union[str, Path]): the file path to get its information
     """
@@ -103,7 +115,11 @@ class WaveDescriber(BaseDescriber):
         ) / (self.get_channels_count() * self.get_sample_width()))
 
     def get_duration(self) -> float:
-        return self.get_num_samples() / self.get_sampling_rate()
+        result = (self.get_file_size() - self.__header.end)
+        result /= self.get_sampling_rate()
+        result /= self.get_channels_count()
+        result /= (self.get_sample_width() / 8)
+        return result
 
 
 class FlacDescriber(BaseDescriber):
@@ -139,18 +155,18 @@ class FlacDescriber(BaseDescriber):
             return
         return num_samples / sampling_rate
 
-    def get_bit_rate(self):
+    def get_bit_rate(self) -> None:
         return None
 
-    def get_byte_rate(self):
+    def get_byte_rate(self) -> None:
         return None
 
-    def get_channels_count(self):
+    def get_channels_count(self) -> int:
         buffer = self._get_buffer(FlacDescriber.__channels)
         result = mask_bytes(buffer, FlacDescriber.__channels_mask)
         return result + 1
 
-    def get_sample_width(self):
+    def get_sample_width(self) -> int:
         buffer = self._get_buffer(FlacDescriber.__sample_width)
         result = mask_bytes(buffer, FlacDescriber.__sample_width_mask)
         result = bits_shift_right(result, 4)
