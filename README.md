@@ -45,7 +45,7 @@ from audesc import WaveDescriber
 file_path = 'my/path/to/file.wav'
 aud_describer = WaveDescriber(file_path)
 description = aud_describer.describe()
-print(description)
+print(str(description))
 print(description.sampling_rate)
 print(description.channels_count)
 print(description.duration)
@@ -59,7 +59,7 @@ from audesc import WaveDescriber
 file_path = 'my/path/to/file.flac'
 aud_describer = WaveDescriber(file_path)
 description = aud_describer.describe()
-print(description)
+print(str(description))
 print(description.sampling_rate)
 print(description.channels_count)
 print(description.duration)
